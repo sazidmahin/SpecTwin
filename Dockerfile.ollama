@@ -1,0 +1,11 @@
+# Ollama service with visible logs
+FROM ollama/ollama:latest
+
+EXPOSE 11434
+
+# Health check
+HEALTHCHECK --interval=10s --timeout=5s --retries=20 --start-period=20s \
+    CMD ollama list || exit 1
+
+# Use default entrypoint from ollama/ollama image
+# Container runs in foreground by default, logs visible
