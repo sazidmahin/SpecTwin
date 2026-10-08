@@ -1,0 +1,153 @@
+name: spl3
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-srs_diagram_platform}
+      POSTGRES_INITDB_ARGS: -c shared_buffers=256MB -c max_connections=200
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-srs_diagram_platform}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  # Not started by default (see backend's OLLAMA_BASE_URL, which now points at a
+  # native Ollama install on the host instead - CPU inference inside Docker
+  # Desktop's WSL2 VM measured 25x+ slower than running Ollama natively on
+  # Windows). Bring back with: docker compose --profile docker-ollama up
+  ollama:
+    profiles: ["docker-ollama"]
+    build:
+      context: .
+      dockerfile: Dockerfile.ollama
+    restart: unless-stopped
+    volumes:
+      - ollama-models:/root/.ollama
+    ports:
+      - "${OLLAMA_PORT:-11434}:11434"
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 20s
+    # --- Uncomment to use an NVIDIA GPU (needs nvidia-container-toolkit) ---
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: all
+    #           capabilities: [gpu]
+
+  # One-shot: make sure the default model is in the ollama-models volume, then exit.
+  # Never fails the stack: if the model is already cached (from a previous run) it is
+  # skipped with no network call, and any pull error is logged but does not stop
+  # backend/frontend from starting - rebuilding backend/frontend never disturbs
+  # the already-running ollama service or its cached models.
+  ollama-init:
+    profiles: ["docker-ollama"]
+    image: ollama/ollama:latest
+    depends_on:
+      ollama:
+        condition: service_healthy
+    environment:
+      OLLAMA_HOST: http://ollama:11434
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-llama3.2:1b}
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        m="$${OLLAMA_MODEL}";
+        if ollama list 2>/dev/null | awk 'NR>1{print $$1}' | grep -qi "^$${m}\(:\|$$\)"; then
+          echo "Already cached, skipping pull: $${m}";
+        else
+          echo "Pulling Ollama model: $${m}";
+          ollama pull "$${m}" || echo "WARNING: failed to pull $${m} (will not block startup - pull it later with: docker compose exec ollama ollama pull $${m})";
+        fi;
+        echo "ollama-init done.";
+        exit 0
+    restart: "no"
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql+psycopg2://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-srs_diagram_platform}
+      SECRET_KEY: ${SECRET_KEY:-change-this-development-secret}
+      AI_CREDENTIAL_ENCRYPTION_KEY: ${AI_CREDENTIAL_ENCRYPTION_KEY:-change-this-development-ai-credential-key}
+      BACKEND_CORS_ORIGINS: ${BACKEND_CORS_ORIGINS:-http://localhost:5173,http://127.0.0.1:5173}
+      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-llama3.2:1b}
+      OLLAMA_MODELS: ${OLLAMA_MODELS:-llama3.2:1b,llama3.2,llama3.1,qwen2.5,qwen2.5-coder,mistral,phi3}
+      OLLAMA_TIMEOUT_SECONDS: ${OLLAMA_TIMEOUT_SECONDS:-600}
+      OLLAMA_NUM_CTX: ${OLLAMA_NUM_CTX:-8192}
+      OLLAMA_NUM_PREDICT: ${OLLAMA_NUM_PREDICT:-1024}
+      OLLAMA_CHUNK_TOKENS: ${OLLAMA_CHUNK_TOKENS:-2000}
+      OLLAMA_KEEP_ALIVE: ${OLLAMA_KEEP_ALIVE:-30m}
+      OLLAMA_NUM_THREAD: ${OLLAMA_NUM_THREAD:-}
+      OLLAMA_EMBED_MODEL: ${OLLAMA_EMBED_MODEL:-nomic-embed-text}
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
+      OPENROUTER_BASE_URL: ${OPENROUTER_BASE_URL:-https://openrouter.ai/api/v1}
+      OPENROUTER_MODEL: ${OPENROUTER_MODEL:-openai/gpt-4o-mini}
+      OPENROUTER_FALLBACK_MODELS: ${OPENROUTER_FALLBACK_MODELS:-}
+      OPENROUTER_TEMPERATURE: ${OPENROUTER_TEMPERATURE:-0.2}
+      OPENROUTER_TIMEOUT_SECONDS: ${OPENROUTER_TIMEOUT_SECONDS:-120}
+      OPENROUTER_MAX_TOKENS: ${OPENROUTER_MAX_TOKENS:-4096}
+      OPENROUTER_MAX_RETRIES: ${OPENROUTER_MAX_RETRIES:-2}
+      OPENROUTER_SITE_URL: ${OPENROUTER_SITE_URL:-}
+      RAG_ENABLED: ${RAG_ENABLED:-false}
+      RAG_TOP_K: ${RAG_TOP_K:-2}
+      RAG_MIN_SIMILARITY: ${RAG_MIN_SIMILARITY:-0.55}
+      # auto = Ollama when it answers, otherwise the built-in lexical embedder.
+      RAG_EMBEDDER: ${RAG_EMBEDDER:-auto}
+      EMAIL_DELIVERY_MODE: ${EMAIL_DELIVERY_MODE:-console}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:5173}
+      WORKSPACE_INVITATION_EXPIRE_DAYS: ${WORKSPACE_INVITATION_EXPIRE_DAYS:-7}
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
+      RESEND_FROM_EMAIL: ${RESEND_FROM_EMAIL:-onboarding@resend.dev}
+      RESEND_FROM_NAME: ${RESEND_FROM_NAME:-SRS Diagram Platform}
+      SUPER_ADMIN_EMAIL: ${SUPER_ADMIN_EMAIL:-}
+      SUPER_ADMIN_PASSWORD: ${SUPER_ADMIN_PASSWORD:-}
+      SUPER_ADMIN_FULL_NAME: ${SUPER_ADMIN_FULL_NAME:-Platform Super Admin}
+    # Lets the backend reach an Ollama running on the host (the default) on Linux
+    # too; Docker Desktop (macOS/Windows) already provides host.docker.internal.
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    ports:
+      - "${BACKEND_PORT:-8000}:8000"
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_ORIGIN: ${VITE_API_ORIGIN:-http://localhost:8000}
+        VITE_API_PREFIX: /api/v1
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "${FRONTEND_PORT:-5173}:80"
+
+volumes:
+  pgdata:
+    driver: local
+    labels:
+      description: "PostgreSQL database persistent storage"
+  ollama-models:
+    driver: local
+    labels:
+      description: "Ollama models persistent storage"
