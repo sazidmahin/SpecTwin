@@ -37,6 +37,33 @@ def send_verification_code(*, email: str, code: str, full_name: str) -> None:
     )
 
 
+def send_password_reset(*, email: str, full_name: str, reset_url: str) -> None:
+    subject = "Reset your SRS Diagram Platform password"
+    expires = settings.password_reset_token_expire_minutes
+    body = (
+        f"Hi {full_name},\n\n"
+        "We received a request to reset your password.\n\n"
+        f"Set a new password: {reset_url}\n\n"
+        f"This link expires in {expires} minutes. If you did not request this, you can ignore this email."
+    )
+    html = (
+        f"<p>Hi {escape(full_name)},</p>"
+        "<p>We received a request to reset your password.</p>"
+        f"<p><a href=\"{escape(reset_url)}\" style=\"display:inline-block;padding:10px 18px;"
+        "background:#4f46e5;color:#ffffff;border-radius:8px;text-decoration:none;font-weight:600\">"
+        "Set a new password</a></p>"
+        f"<p>Or open this link: <a href=\"{escape(reset_url)}\">{escape(reset_url)}</a></p>"
+        f"<p>This link expires in {expires} minutes. If you did not request this, you can ignore this email.</p>"
+    )
+    _deliver(
+        to=email,
+        subject=subject,
+        text=body,
+        html=html,
+        console_line=f"[password reset] To: {email} Link: {reset_url}",
+    )
+
+
 def send_workspace_invitation(
     *, email: str, workspace_name: str, inviter_name: str, role: str, invite_url: str
 ) -> None:
@@ -93,6 +120,7 @@ def _deliver(*, to: str, subject: str, text: str, html: str, console_line: str) 
     message["From"] = f"{settings.smtp_from_name} <{settings.smtp_from_email}>"
     message["To"] = to
     message.set_content(text)
+    message.add_alternative(html, subtype="html")
 
     with smtplib.SMTP(settings.smtp_host, settings.smtp_port) as smtp:
         if settings.smtp_use_tls:

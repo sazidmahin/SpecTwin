@@ -2,11 +2,12 @@ import { useState } from 'react'
 import type { FormEvent, ReactNode } from 'react'
 import { Check, Info, Loader2 } from 'lucide-react'
 import { authApi, errorMessage } from '../../api'
+import { navigate } from '../../app/core/router'
 import { useSession } from '../../app/core/session'
 import { cn, useFeedback } from '../../shared/ui'
 import { AuthField, AuthFrame, AuthLinkButton, AuthPanelHeader } from './components/AuthFrame'
 
-export type AuthViewName = 'login' | 'register' | 'verify' | 'forgot' | 'reset'
+export type AuthViewName = 'login' | 'register' | 'verify' | 'forgot' | 'sent' | 'reset'
 type View = AuthViewName
 
 const submitClass =
@@ -41,11 +42,13 @@ export function Alert({ tone = 'error', children }: { tone?: 'error' | 'info'; c
 type AuthViewProps = {
   initialView?: AuthViewName
   initialEmail?: string
+  /** Reset token taken from the emailed password reset link. */
+  initialResetToken?: string
   /** Shown above the sign-in and sign-up forms, e.g. which workspace an invite is for. */
   notice?: ReactNode
 }
 
-export function AuthView({ initialView = 'login', initialEmail = '', notice }: AuthViewProps = {}) {
+export function AuthView({ initialView = 'login', initialEmail = '', initialResetToken = '', notice }: AuthViewProps = {}) {
   const { signIn, expiredNotice } = useSession()
   const { toast } = useFeedback()
   const [view, setView] = useState<View>(initialView)
@@ -55,7 +58,7 @@ export function AuthView({ initialView = 'login', initialEmail = '', notice }: A
   const [fullName, setFullName] = useState('')
   const [code, setCode] = useState('')
   const [devCode, setDevCode] = useState<string | null>(null)
-  const [resetToken, setResetToken] = useState('')
+  const [resetToken, setResetToken] = useState(initialResetToken)
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [formError, setFormError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
@@ -146,9 +149,14 @@ export function AuthView({ initialView = 'login', initialEmail = '', notice }: A
     if (Object.values(next).some(Boolean)) return
     void attempt(async () => {
       const result = await authApi.forgotPassword(email.trim())
-      setResetToken(result.reset_token ?? '')
-      go('reset')
-      toast('Reset requested', { description: 'Use the token from your email to set a new password.', tone: 'info' })
+      // The token only comes back in local console mode; otherwise it is in the emailed link.
+      if (result.reset_token) {
+        setResetToken(result.reset_token)
+        go('reset')
+        toast('Development mode', { description: 'Reset token filled in from the console email.', tone: 'info' })
+      } else {
+        go('sent')
+      }
     }, 'Could not request a password reset')
   }
 
@@ -162,6 +170,8 @@ export function AuthView({ initialView = 'login', initialEmail = '', notice }: A
     if (Object.values(next).some(Boolean)) return
     void attempt(async () => {
       await authApi.resetPassword({ token: resetToken.trim(), new_password: password })
+      // Leave the emailed link's route so a refresh doesn't reopen the spent token.
+      if (initialResetToken) navigate('/', undefined, { replace: true })
       go('login')
       toast('Password updated', { description: 'Sign in with your new password.' })
     }, 'Could not reset your password')
@@ -200,7 +210,7 @@ export function AuthView({ initialView = 'login', initialEmail = '', notice }: A
   if (view === 'forgot') {
     return (
       <AuthFrame artwork="question">
-        <AuthPanelHeader title="Forgot your password?" subtitle="Enter your account email and we'll send you a reset token." />
+        <AuthPanelHeader title="Forgot your password?" subtitle="Enter your account email and we'll send you a link to reset your password." />
         <form className="grid gap-5" onSubmit={submitForgot} noValidate>
           <AuthField
             autoComplete="email"
@@ -217,9 +227,22 @@ export function AuthView({ initialView = 'login', initialEmail = '', notice }: A
             }}
           />
           {formError ? <Alert>{formError}</Alert> : null}
-          <SubmitButton busy={busy}>Send reset token</SubmitButton>
+          <SubmitButton busy={busy}>Send reset link</SubmitButton>
         </form>
         <footer className="mt-7 text-center">
+          <AuthLinkButton onClick={() => go('login')}>Back to sign in</AuthLinkButton>
+        </footer>
+      </AuthFrame>
+    )
+  }
+
+  if (view === 'sent') {
+    return (
+      <AuthFrame artwork="mail">
+        <AuthPanelHeader title="Check your email" subtitle={`If an account exists for ${email || 'that email'}, we sent a link to reset your password.`} />
+        <Alert tone="info">The link expires soon. Didn't get it? Check your spam folder or request another one.</Alert>
+        <footer className="mt-7 flex flex-wrap items-center justify-between gap-3">
+          <AuthLinkButton onClick={() => go('forgot')}>Send another link</AuthLinkButton>
           <AuthLinkButton onClick={() => go('login')}>Back to sign in</AuthLinkButton>
         </footer>
       </AuthFrame>

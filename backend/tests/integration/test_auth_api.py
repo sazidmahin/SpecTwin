@@ -7,11 +7,14 @@ from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import StaticPool
 
 from app.api.deps import get_db
+from app.core.config import settings
 from app.core.security import verify_password
 from app.db import models  # noqa: F401
 from app.db.base import Base
 from app.db.models import User, Workspace, WorkspaceMember
 from app.main import app
+from app.services import auth_service
+from app.services.email_service import EmailDeliveryError
 
 
 @pytest.fixture()
@@ -274,6 +277,51 @@ def test_forgot_password_and_reset_password_flow(
         "/api/v1/auth/login", json={"email": "reset@example.com", "password": "new-password"}
     )
     assert new_login_response.status_code == 200
+
+
+def test_forgot_password_emails_link_and_hides_token_outside_console_mode(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    register_and_verify(client, "emailed-reset@example.com", "Emailed Reset")
+    sent: list[dict[str, str]] = []
+    monkeypatch.setattr(settings, "email_delivery_mode", "resend")
+    monkeypatch.setattr(settings, "frontend_url", "https://app.example.com/")
+    monkeypatch.setattr(auth_service, "send_password_reset", lambda **kwargs: sent.append(kwargs))
+
+    response = client.post(
+        "/api/v1/auth/forgot-password", json={"email": "emailed-reset@example.com"}
+    )
+
+    assert response.status_code == 200
+    assert response.json()["reset_token"] is None
+    assert len(sent) == 1
+    assert sent[0]["email"] == "emailed-reset@example.com"
+    prefix = "https://app.example.com/#/reset-password/"
+    assert sent[0]["reset_url"].startswith(prefix)
+
+    token = sent[0]["reset_url"].removeprefix(prefix)
+    reset_response = client.post(
+        "/api/v1/auth/reset-password",
+        json={"token": token, "new_password": "new-password"},
+    )
+    assert reset_response.status_code == 200
+
+
+def test_forgot_password_reports_email_delivery_failure(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    register_and_verify(client, "broken-mail@example.com", "Broken Mail")
+
+    def fail(**_kwargs: str) -> None:
+        raise EmailDeliveryError("Could not send the email")
+
+    monkeypatch.setattr(auth_service, "send_password_reset", fail)
+
+    response = client.post(
+        "/api/v1/auth/forgot-password", json={"email": "broken-mail@example.com"}
+    )
+
+    assert response.status_code == 503
 
 
 def test_reset_password_rejects_invalid_token(client: TestClient) -> None:

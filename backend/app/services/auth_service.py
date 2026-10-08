@@ -16,7 +16,7 @@ from app.core.security import (
     verify_password,
 )
 from app.db.models import User, Workspace, WorkspaceMember
-from app.services.email_service import send_verification_code
+from app.services.email_service import send_password_reset, send_verification_code
 
 _EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 _SLUG_RE = re.compile(r"[^a-z0-9]+")
@@ -114,7 +114,7 @@ def _set_verification_code(user: User) -> str:
     return code
 
 
-def _local_verification_code(code: str) -> str | None:
+def _console_only(code: str) -> str | None:
     if settings.email_delivery_mode == "console":
         return code
     return None
@@ -159,7 +159,7 @@ def register_user(db: Session, *, email: str, password: str, full_name: str) -> 
     send_verification_code(email=user.email, code=code, full_name=user.full_name)
     db.commit()
 
-    return RegistrationResult(verification_code=_local_verification_code(code))
+    return RegistrationResult(verification_code=_console_only(code))
 
 
 def verify_email(db: Session, *, email: str, code: str) -> AuthResult:
@@ -207,7 +207,7 @@ def resend_verification_code(db: Session, *, email: str) -> VerificationCodeResu
     send_verification_code(email=user.email, code=code, full_name=user.full_name)
     db.commit()
 
-    return VerificationCodeResult(verification_code=_local_verification_code(code))
+    return VerificationCodeResult(verification_code=_console_only(code))
 
 
 def authenticate_user(db: Session, *, email: str, password: str) -> AuthResult:
@@ -227,7 +227,11 @@ def request_password_reset(db: Session, *, email: str) -> PasswordResetRequestRe
     if user is None:
         return PasswordResetRequestResult(reset_token=None)
 
-    return PasswordResetRequestResult(reset_token=create_password_reset_token(user.id))
+    token = create_password_reset_token(user.id)
+    reset_url = f"{settings.frontend_url.rstrip('/')}/#/reset-password/{token}"
+    send_password_reset(email=user.email, full_name=user.full_name, reset_url=reset_url)
+    # The token only travels in the email; console mode echoes it back for local dev.
+    return PasswordResetRequestResult(reset_token=_console_only(token))
 
 
 def reset_password(db: Session, *, token: str, new_password: str) -> None:

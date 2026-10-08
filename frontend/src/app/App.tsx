@@ -200,6 +200,9 @@ function Gate() {
   const route = useRoute()
   // The emailed invite link works signed in or out, so it sits outside the app shell.
   if (route.segments[0] === 'invite' && route.segments[1]) return <InvitePage key={route.segments[1]} token={route.segments[1]} />
+  // So does the emailed password reset link: it opens straight on the new-password form.
+  if (route.segments[0] === 'reset-password' && route.segments[1])
+    return <AuthView key={route.segments[1]} initialView="reset" initialResetToken={route.segments[1]} />
   if (session.status === 'signed-out') return <AuthView />
   return <Shell />
 }

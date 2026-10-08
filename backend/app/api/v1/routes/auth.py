@@ -119,9 +119,15 @@ def logout(user: User = Depends(get_current_user)) -> MessageResponse:
 def forgot_password(
     payload: ForgotPasswordRequest, db: Session = Depends(get_db)
 ) -> ForgotPasswordResponse:
-    result = request_password_reset(db, email=payload.email)
+    try:
+        result = request_password_reset(db, email=payload.email)
+    except EmailDeliveryError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Could not send the password reset email. Please try again later.",
+        ) from exc
     return ForgotPasswordResponse(
-        message="If the email exists, a password reset token has been generated.",
+        message="If the email exists, a password reset link has been sent.",
         reset_token=result.reset_token,
     )
 
