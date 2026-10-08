@@ -1,0 +1,13 @@
+fastapi>=0.115,<1.0
+langchain>=0.3,<2.0
+langchain-openai>=0.3,<2.0
+langchain-anthropic>=0.3,<2.0
+langchain-google-genai>=4.0,<5.0
+langgraph>=1.2,<2.0
+cryptography>=44,<47
+pydantic-settings>=2.7,<3.0
+psycopg2-binary>=2.9,<3.0
+sqlalchemy>=2.0,<3.0
+alembic>=1.14,<2.0
+uvicorn[standard]>=0.34,<1.0
+pytest>=8.3,<9.0
