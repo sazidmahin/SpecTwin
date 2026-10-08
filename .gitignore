@@ -1,0 +1,277 @@
+```gitignore
+# =========================================================
+# Master .gitignore
+# Project: React/TypeScript Frontend + FastAPI Backend
+# =========================================================
+
+
+# =========================================================
+# Operating System Files
+# =========================================================
+*.tex
+*.txt
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+Desktop.ini
+
+
+# =========================================================
+# Editor / IDE Files
+# =========================================================
+
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+!.vscode/launch.json
+!.vscode/tasks.json
+
+.idea/
+*.swp
+*.swo
+*.swn
+*.bak
+*.tmp
+*.temp
+
+
+# =========================================================
+# Environment Files
+# =========================================================
+./.env
+.env
+.env.*
+!.env.example
+
+frontend/.env
+frontend/.env.*
+!frontend/.env.example
+
+backend/.env
+backend/.env.*
+!backend/.env.example
+
+
+# =========================================================
+# Logs
+# =========================================================
+
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+uvicorn.log
+gunicorn.log
+
+
+# =========================================================
+# Root Build / Cache Files
+# =========================================================
+
+.cache/
+.tmp/
+temp/
+dist/
+build/
+coverage/
+
+
+# =========================================================
+# Frontend: React / TypeScript / Vite / Yarn
+# =========================================================
+
+frontend/node_modules/
+frontend/dist/
+frontend/build/
+frontend/.vite/
+frontend/.cache/
+frontend/coverage/
+
+# Yarn
+frontend/.yarn/*
+!frontend/.yarn/releases
+!frontend/.yarn/plugins
+!frontend/.yarn/sdks
+!frontend/.yarn/versions
+frontend/.pnp.*
+frontend/.yarn/cache/
+
+# NPM / PNPM fallback
+frontend/package-lock.json
+frontend/pnpm-lock.yaml
+
+# TypeScript
+frontend/*.tsbuildinfo
+frontend/tsconfig.tsbuildinfo
+
+# Frontend logs
+frontend/npm-debug.log*
+frontend/yarn-debug.log*
+frontend/yarn-error.log*
+
+
+# =========================================================
+# Backend: Python / FastAPI
+# =========================================================
+
+backend/__pycache__/
+backend/**/__pycache__/
+backend/*.py[cod]
+backend/**/*.[pyc]
+backend/*.pyo
+backend/*.pyd
+
+# Python virtual environments
+backend/.venv/
+backend/venv/
+backend/env/
+backend/ENV/
+
+# Python build artifacts
+backend/build/
+backend/dist/
+backend/*.egg-info/
+backend/.eggs/
+backend/wheels/
+
+# Python test/cache
+backend/.pytest_cache/
+backend/.mypy_cache/
+backend/.ruff_cache/
+backend/.coverage
+backend/coverage.xml
+backend/htmlcov/
+backend/.tox/
+backend/.nox/
+
+# FastAPI / local runtime
+backend/logs/
+backend/tmp/
+backend/temp/
+backend/uploads/
+backend/generated/
+backend/artifacts/
+
+# SQLite local DB fallback
+backend/*.sqlite
+backend/*.sqlite3
+backend/*.db
+
+
+# =========================================================
+# Alembic / Database
+# =========================================================
+
+# Keep Alembic migration files tracked.
+# Do NOT ignore backend/alembic/versions/.
+
+# Local database dumps
+*.dump
+*.sql.gz
+*.backup
+*.bak.sql
+
+
+# =========================================================
+# Docker
+# =========================================================
+
+.docker/
+docker-compose.override.yml
+
+# Keep main docker-compose.yml tracked.
+
+
+
+# =========================================================
+# AI / Generated Local Files
+# =========================================================
+
+.openai/
+.anthropic/
+.codex/
+.cursor/
+.replit/
+
+# If you want Cursor rules tracked, remove this line:
+.cursor/
+
+
+# =========================================================
+# Local Uploads / Generated Artifacts
+# =========================================================
+
+uploads/
+generated/
+artifacts/
+exports/
+tmp/
+temp/
+
+*.drawio.bak
+*.xml.bak
+
+
+# =========================================================
+# Secrets / Keys / Certificates
+# =========================================================
+
+*.pem
+*.key
+*.crt
+*.cer
+*.p12
+*.pfx
+id_rsa
+id_rsa.pub
+id_ed25519
+id_ed25519.pub
+
+secrets/
+credentials/
+service-account.json
+google-credentials.json
+firebase-adminsdk.json
+
+
+# =========================================================
+# Dependency / Package Manager Files
+# =========================================================
+
+# Keep yarn.lock tracked for frontend reproducibility.
+# Do not ignore frontend/yarn.lock.
+
+# Ignore root accidental dependencies
+node_modules/
+package-lock.json
+pnpm-lock.yaml
+
+
+# =========================================================
+# Test Reports
+# =========================================================
+
+test-results/
+playwright-report/
+coverage/
+htmlcov/
+junit.xml
+pytest-report.xml
+
+
+# =========================================================
+# Misc
+# =========================================================
+
+*.orig
+*.rej
+*.pid
+*.seed
+*.pid.lock
+```

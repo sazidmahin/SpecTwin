@@ -1,0 +1,101 @@
+[
+  {
+    "id": "NAR_CUSTOMER_ACCOUNT_001",
+    "pattern": "\\b(need to know their name|full name, phone number, email|delivery address)\\b",
+    "actor": "Customer",
+    "action": "register",
+    "object": "Account",
+    "want": "create an account using my full name, email address, phone number, and delivery address",
+    "goal": "I can shop without entering my details every time"
+  },
+  {
+    "id": "NAR_CUSTOMER_BROWSE_001",
+    "pattern": "\\b(see the clothes|look at the pictures|clothes i sell)\\b",
+    "actor": "Customer",
+    "action": "view",
+    "object": "Product",
+    "want": "browse available products and see their pictures, prices, and details",
+    "goal": "I can decide what to buy"
+  },
+  {
+    "id": "NAR_CUSTOMER_CART_001",
+    "pattern": "\\b(put it in their basket|put .* in (their )?basket)\\b",
+    "actor": "Customer",
+    "action": "add",
+    "object": "ShoppingCart",
+    "want": "add products to my shopping cart",
+    "goal": "I can purchase several items together"
+  },
+  {
+    "id": "NAR_CUSTOMER_CART_UPDATE_001",
+    "pattern": "\\b(change the number of items|remove something)\\b",
+    "actor": "Customer",
+    "action": "update",
+    "object": "ShoppingCart",
+    "want": "change the quantity of a product or remove it from my cart",
+    "goal": "I can correct my order before buying"
+  },
+  {
+    "id": "NAR_CUSTOMER_ORDER_001",
+    "pattern": "\\b(buy more than one item together|buys something)\\b",
+    "actor": "Customer",
+    "action": "create",
+    "object": "Order",
+    "want": "place an order for the items in my cart",
+    "goal": "I can complete my purchase"
+  },
+  {
+    "id": "NAR_CUSTOMER_TRACK_ORDER_001",
+    "pattern": "\\b(order number|ask us about their order)\\b",
+    "actor": "Customer",
+    "action": "track",
+    "object": "Order",
+    "want": "receive an order number and track my order",
+    "goal": "I know the progress of my purchase"
+  },
+  {
+    "id": "NAR_ADMIN_VIEW_ORDERS_001",
+    "pattern": "\\b(see all the orders|orders that customers make)\\b",
+    "actor": "Administrator",
+    "action": "view",
+    "object": "Order",
+    "want": "view all customer orders",
+    "goal": "I can manage the business"
+  },
+  {
+    "id": "NAR_ADMIN_APPROVE_ORDER_001",
+    "pattern": "\\b(check an order|accept it)\\b",
+    "actor": "Administrator",
+    "action": "approve",
+    "object": "Order",
+    "want": "check and approve an order",
+    "goal": "only valid orders are processed"
+  },
+  {
+    "id": "NAR_ADMIN_SHIPMENT_001",
+    "pattern": "\\b(pack the items|send it to the customer|tracking number)\\b",
+    "actor": "Administrator",
+    "action": "update",
+    "object": "Shipment",
+    "want": "arrange delivery and update shipment tracking details",
+    "goal": "customers know when their parcel will arrive"
+  },
+  {
+    "id": "NAR_ADMIN_CATALOG_001",
+    "pattern": "\\b(change the stock and price|stock and price)\\b",
+    "actor": "Administrator",
+    "action": "update",
+    "object": "Product",
+    "want": "update product stock and prices",
+    "goal": "customers see accurate availability and prices"
+  },
+  {
+    "id": "NAR_ADMIN_LOYALTY_001",
+    "pattern": "\\b(customers buy often|special discounts|special offers)\\b",
+    "actor": "Administrator",
+    "action": "manage",
+    "object": "Customer",
+    "want": "identify frequent customers and give them special offers",
+    "goal": "loyal customers receive better service"
+  }
+]

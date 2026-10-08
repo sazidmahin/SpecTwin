@@ -1,0 +1,9 @@
+Alembic migration environment for the SRS Diagram Platform backend.
+
+Create a migration:
+
+    alembic revision --autogenerate -m "describe change"
+
+Apply migrations:
+
+    alembic upgrade head

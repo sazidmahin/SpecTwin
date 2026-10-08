@@ -1,0 +1,17 @@
+.venv/
+venv/
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+pytest-cache-files-*/
+.tmp/
+tests/
+model_artifacts/
+*.pdf
+.env
+.env.*
+!.env.example
+.git/
+.mypy_cache/
+.ruff_cache/

@@ -1,0 +1,7 @@
+# Inference-only dependencies for the uploaded local Qwen-1.5 + LoRA artifact.
+# Training is intentionally not included in this repository.
+torch>=2.4,<3.0
+transformers>=4.37,<5.0
+accelerate>=1.0,<2.0
+bitsandbytes>=0.45,<1.0
+peft>=0.13,<1.0

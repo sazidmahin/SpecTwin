@@ -1,0 +1,1 @@
+﻿{"one":"1","exactly one":"1","single":"1","zero or one":"0..1","optional":"0..1","at most one":"0..1","one or more":"1..*","at least one":"1..*","multiple":"0..*","many":"0..*","several":"0..*","zero or more":"0..*","any number of":"0..*","all":"0..*","none":"0","no":"0"}
